@@ -6,17 +6,21 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		58040A0E3012DE9100921D52 /* Temporun2App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58040A0D3012DE9100921D52 /* Temporun2App.swift */; };
+		58040A103012DE9100921D52 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58040A0F3012DE9100921D52 /* ContentView.swift */; };
+		58040A1C3012E1ED00921D52 /* YouTubePlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58040A1B3012E1ED00921D52 /* YouTubePlayerView.swift */; };
+		5893B99D3012EE27002997CE /* LocationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5893B99C3012EE27002997CE /* LocationManager.swift */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		58040A0A3012DE9100921D52 /* Temporun2.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Temporun2.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		58040A0D3012DE9100921D52 /* Temporun2App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Temporun2App.swift; sourceTree = "<group>"; };
+		58040A0F3012DE9100921D52 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		58040A1B3012E1ED00921D52 /* YouTubePlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YouTubePlayerView.swift; sourceTree = "<group>"; };
+		5893B99C3012EE27002997CE /* LocationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationManager.swift; sourceTree = "<group>"; };
+		5893B99E3012EE9D002997CE /* Temporun2-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "Temporun2-Info.plist"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
-
-/* Begin PBXFileSystemSynchronizedRootGroup section */
-		58040A0C3012DE9100921D52 /* Temporun2 */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = Temporun2;
-			sourceTree = "<group>";
-		};
-/* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		58040A073012DE9100921D52 /* Frameworks */ = {
@@ -32,8 +36,11 @@
 		58040A013012DE9100921D52 = {
 			isa = PBXGroup;
 			children = (
-				58040A0C3012DE9100921D52 /* Temporun2 */,
+				5893B99E3012EE9D002997CE /* Temporun2-Info.plist */,
+				58040A1A3012E11200921D52 /* Managers */,
+				58040A193012E0DC00921D52 /* Views */,
 				58040A0B3012DE9100921D52 /* Products */,
+				58040A0D3012DE9100921D52 /* Temporun2App.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -43,6 +50,23 @@
 				58040A0A3012DE9100921D52 /* Temporun2.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		58040A193012E0DC00921D52 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				58040A0F3012DE9100921D52 /* ContentView.swift */,
+				58040A1B3012E1ED00921D52 /* YouTubePlayerView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		58040A1A3012E11200921D52 /* Managers */ = {
+			isa = PBXGroup;
+			children = (
+				5893B99C3012EE27002997CE /* LocationManager.swift */,
+			);
+			path = Managers;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -59,9 +83,6 @@
 			buildRules = (
 			);
 			dependencies = (
-			);
-			fileSystemSynchronizedGroups = (
-				58040A0C3012DE9100921D52 /* Temporun2 */,
 			);
 			name = Temporun2;
 			packageProductDependencies = (
@@ -94,6 +115,8 @@
 			);
 			mainGroup = 58040A013012DE9100921D52;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 58040A0B3012DE9100921D52 /* Products */;
 			projectDirPath = "";
@@ -119,6 +142,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5893B99D3012EE27002997CE /* LocationManager.swift in Sources */,
+				58040A103012DE9100921D52 /* ContentView.swift in Sources */,
+				58040A1C3012E1ED00921D52 /* YouTubePlayerView.swift in Sources */,
+				58040A0E3012DE9100921D52 /* Temporun2App.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -256,6 +283,8 @@
 				DEVELOPMENT_TEAM = 8SXL677VNX;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Temporun2-Info.plist";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "ランニング速度を取得し、音楽の再生速度を調整するために位置情報を使用します。";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -288,6 +317,8 @@
 				DEVELOPMENT_TEAM = 8SXL677VNX;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Temporun2-Info.plist";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "ランニング速度を取得し、音楽の再生速度を調整するために位置情報を使用します。";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
