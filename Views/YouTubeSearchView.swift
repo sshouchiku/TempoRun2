@@ -3,34 +3,40 @@ import SwiftUI
 struct YouTubeSearchView: View {
 
     @Binding
-    var selectedVideo: YouTubeVideo?
+    var selectedVideo:
+        YouTubeVideo?
 
     @ObservedObject
     var favoritesManager:
         FavoritesManager
 
     @State
-    private var searchText: String = ""
+    private var searchText =
+        ""
 
     @State
     private var searchResults:
         [YouTubeVideo] = []
 
     @State
-    private var isSearching: Bool = false
+    private var isSearching =
+        false
 
     @State
-    private var isLoadingMore: Bool = false
+    private var isLoadingMore =
+        false
 
     @State
-    private var errorMessage: String?
+    private var errorMessage:
+        String?
 
     @State
-    private var nextPageToken: String?
+    private var nextPageToken:
+        String?
 
-    // 最後に検索した言葉
     @State
-    private var currentQuery: String = ""
+    private var currentQuery =
+        ""
 
     private let searchService =
         YouTubeSearchService()
@@ -38,52 +44,114 @@ struct YouTubeSearchView: View {
 
     var body: some View {
 
-        VStack(spacing: 12) {
+        VStack(
+            alignment: .leading,
+            spacing: 16
+        ) {
 
-            // =====================================
-            // 検索欄
-            // =====================================
+            // MARK: Search Bar
 
-            HStack {
+            HStack(
+                spacing: 10
+            ) {
+
+                Image(
+                    systemName:
+                        "magnifyingglass"
+                )
+                .foregroundStyle(
+                    .secondary
+                )
 
                 TextField(
                     "曲名・アーティストを検索",
                     text: $searchText
                 )
-                .textFieldStyle(
-                    .roundedBorder
-                )
                 .autocorrectionDisabled()
-
-                Button("検索") {
+                .textInputAutocapitalization(
+                    .never
+                )
+                .submitLabel(.search)
+                .onSubmit {
 
                     search()
                 }
-                .buttonStyle(
-                    .borderedProminent
-                )
-                .disabled(
-                    isSearching
-                )
+
+                if !searchText.isEmpty {
+
+                    Button {
+
+                        searchText = ""
+
+                    } label: {
+
+                        Image(
+                            systemName:
+                                "xmark.circle.fill"
+                        )
+                        .foregroundStyle(
+                            .secondary
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
             }
-
-
-            // =====================================
-            // 検索中
-            // =====================================
-
-            if isSearching {
-
-                ProgressView(
-                    "検索中..."
+            .padding(14)
+            .background(
+                MelonomeTheme.card
+            )
+            .clipShape(
+                RoundedRectangle(
+                    cornerRadius: 16
                 )
-                .padding(.vertical, 8)
+            )
+
+
+            Button {
+
+                search()
+
+            } label: {
+
+                HStack {
+
+                    Spacer()
+
+                    if isSearching {
+
+                        ProgressView()
+                            .tint(.black)
+
+                    } else {
+
+                        Image(
+                            systemName:
+                                "magnifyingglass"
+                        )
+
+                        Text("検索")
+                            .fontWeight(.bold)
+                    }
+
+                    Spacer()
+                }
+                .padding(.vertical, 13)
             }
+            .foregroundStyle(
+                .black
+            )
+            .background(
+                MelonomeTheme.accent
+            )
+            .clipShape(
+                RoundedRectangle(
+                    cornerRadius: 14
+                )
+            )
+            .disabled(
+                isSearching
+            )
 
-
-            // =====================================
-            // エラー
-            // =====================================
 
             if let errorMessage {
 
@@ -95,99 +163,91 @@ struct YouTubeSearchView: View {
             }
 
 
-            // =====================================
-            // 検索結果
-            // =====================================
-
             if !searchResults.isEmpty {
 
-                VStack(
-                    alignment: .leading,
+                Text("検索結果")
+                    .font(.title3)
+                    .fontWeight(.bold)
+
+
+                LazyVStack(
                     spacing: 10
                 ) {
-
-                    Text("検索結果")
-                        .font(.headline)
 
                     ForEach(
                         searchResults
                     ) { video in
 
-                        searchResultRow(
+                        resultRow(
                             video
                         )
                     }
+                }
 
 
-                    // =====================================
-                    // もっと見る
-                    // =====================================
+                if nextPageToken != nil {
 
-                    if nextPageToken != nil {
+                    Button {
 
-                        Button {
+                        loadMore()
 
-                            loadMore()
+                    } label: {
 
-                        } label: {
+                        HStack {
 
-                            HStack {
+                            Spacer()
 
-                                Spacer()
+                            if isLoadingMore {
 
-                                if isLoadingMore {
+                                ProgressView()
 
-                                    ProgressView()
+                            } else {
 
-                                } else {
+                                Text(
+                                    "もっと見る"
+                                )
+                                .fontWeight(
+                                    .semibold
+                                )
 
-                                    Image(
-                                        systemName:
-                                            "chevron.down"
-                                    )
-
-                                    Text(
-                                        "もっと見る"
-                                    )
-                                    .fontWeight(
-                                        .semibold
-                                    )
-                                }
-
-                                Spacer()
+                                Image(
+                                    systemName:
+                                        "chevron.down"
+                                )
                             }
-                            .padding(.vertical, 10)
+
+                            Spacer()
                         }
-                        .buttonStyle(
-                            .bordered
-                        )
-                        .disabled(
-                            isLoadingMore
-                        )
+                        .padding(.vertical, 14)
                     }
+                    .foregroundStyle(
+                        MelonomeTheme.accent
+                    )
+                    .background(
+                        MelonomeTheme.card
+                    )
+                    .clipShape(
+                        RoundedRectangle(
+                            cornerRadius: 14
+                        )
+                    )
+                    .disabled(
+                        isLoadingMore
+                    )
                 }
             }
         }
     }
 
 
-    // =====================================
-    // 検索結果1行
-    // =====================================
-
-    @ViewBuilder
-    private func searchResultRow(
-        _ video: YouTubeVideo
+    private func resultRow(
+        _ video:
+            YouTubeVideo
     ) -> some View {
 
         HStack(
-            alignment: .center,
             spacing: 12
         ) {
-
-            // -------------------------
-            // 動画選択部分
-            // -------------------------
 
             Button {
 
@@ -197,15 +257,16 @@ struct YouTubeSearchView: View {
             } label: {
 
                 HStack(
-                    alignment: .center,
                     spacing: 12
                 ) {
 
                     AsyncImage(
-                        url: URL(
-                            string:
-                                video.thumbnailURL
-                        )
+                        url:
+                            URL(
+                                string:
+                                    video
+                                    .thumbnailURL
+                            )
                     ) { image in
 
                         image
@@ -216,42 +277,40 @@ struct YouTubeSearchView: View {
 
                         Rectangle()
                             .fill(
-                                Color.gray.opacity(
-                                    0.2
-                                )
+                                MelonomeTheme
+                                    .cardLight
                             )
                     }
                     .frame(
-                        width: 110,
+                        width: 105,
                         height: 62
                     )
                     .clipShape(
                         RoundedRectangle(
-                            cornerRadius: 8
+                            cornerRadius: 10
                         )
                     )
+
 
                     VStack(
                         alignment: .leading,
                         spacing: 4
                     ) {
 
-                        Text(
-                            video.title
-                        )
-                        .font(
-                            .subheadline
-                        )
-                        .fontWeight(
-                            .semibold
-                        )
-                        .foregroundStyle(
-                            .primary
-                        )
-                        .lineLimit(2)
-                        .multilineTextAlignment(
-                            .leading
-                        )
+                        Text(video.title)
+                            .font(
+                                .subheadline
+                            )
+                            .fontWeight(
+                                .semibold
+                            )
+                            .lineLimit(2)
+                            .foregroundStyle(
+                                .white
+                            )
+                            .multilineTextAlignment(
+                                .leading
+                            )
 
                         Text(
                             video.channelTitle
@@ -263,27 +322,10 @@ struct YouTubeSearchView: View {
                     }
 
                     Spacer()
-
-                    if selectedVideo?.id
-                        == video.id {
-
-                        Image(
-                            systemName:
-                                "checkmark.circle.fill"
-                        )
-                        .font(.title2)
-                        .foregroundStyle(
-                            .blue
-                        )
-                    }
                 }
             }
             .buttonStyle(.plain)
 
-
-            // -------------------------
-            // お気に入りボタン
-            // -------------------------
 
             Button {
 
@@ -297,47 +339,54 @@ struct YouTubeSearchView: View {
                 Image(
                     systemName:
                         favoritesManager
-                        .isFavorite(
-                            video
-                        )
+                        .isFavorite(video)
                         ? "star.fill"
                         : "star"
                 )
-                .font(.title2)
+                .font(.title3)
                 .foregroundStyle(
                     favoritesManager
-                    .isFavorite(
-                        video
-                    )
-                    ? .yellow
+                        .isFavorite(video)
+                    ? MelonomeTheme.accent
                     : .secondary
+                )
+                .frame(
+                    width: 40,
+                    height: 40
                 )
             }
             .buttonStyle(.plain)
         }
         .padding(10)
-        .background {
-
-            RoundedRectangle(
-                cornerRadius: 12
-            )
-            .fill(
-                selectedVideo?.id
+        .background(
+            selectedVideo?.id
                 == video.id
-                ? Color.blue.opacity(
-                    0.10
+            ? MelonomeTheme
+                .accent
+                .opacity(0.12)
+            : MelonomeTheme.card
+        )
+        .overlay {
+
+            if selectedVideo?.id
+                == video.id {
+
+                RoundedRectangle(
+                    cornerRadius: 16
                 )
-                : Color.gray.opacity(
-                    0.06
+                .stroke(
+                    MelonomeTheme.accent,
+                    lineWidth: 1
                 )
-            )
+            }
         }
+        .clipShape(
+            RoundedRectangle(
+                cornerRadius: 16
+            )
+        )
     }
 
-
-    // =====================================
-    // 新規検索
-    // =====================================
 
     private func search() {
 
@@ -355,10 +404,10 @@ struct YouTubeSearchView: View {
         isSearching = true
         errorMessage = nil
 
-        // 新しい検索なのでリセット
         currentQuery = query
         searchResults = []
         nextPageToken = nil
+
 
         Task {
 
@@ -387,7 +436,7 @@ struct YouTubeSearchView: View {
                 await MainActor.run {
 
                     errorMessage =
-                        "検索に失敗しました: \(error.localizedDescription)"
+                        "検索に失敗しました"
 
                     isSearching =
                         false
@@ -397,21 +446,18 @@ struct YouTubeSearchView: View {
     }
 
 
-    // =====================================
-    // もっと見る
-    // =====================================
-
     private func loadMore() {
 
         guard
             !currentQuery.isEmpty,
             let nextPageToken
         else {
+
             return
         }
 
         isLoadingMore = true
-        errorMessage = nil
+
 
         Task {
 
@@ -428,7 +474,6 @@ struct YouTubeSearchView: View {
 
                 await MainActor.run {
 
-                    // 今ある10件の下に追加
                     searchResults
                         .append(
                             contentsOf:
