@@ -14,6 +14,14 @@ struct SearchView: View {
     var favoritesManager:
         FavoritesManager
 
+    @ObservedObject
+    var shuffleManager:
+        ShuffleManager
+
+    @Binding
+    var shouldAutoplay:
+        Bool
+
     @Binding
     var selectedTab:
         AppTab
@@ -29,6 +37,7 @@ struct SearchView: View {
                     .background
                     .ignoresSafeArea()
 
+
                 ScrollView {
 
                     VStack(
@@ -43,16 +52,17 @@ struct SearchView: View {
                             spacing: 4
                         ) {
 
-                            Text("検索")
-                                .font(
-                                    .system(
-                                        size: 34,
-                                        weight:
-                                            .black,
-                                        design:
-                                            .rounded
-                                    )
+                            Text(
+                                "検索"
+                            )
+                            .font(
+                                .system(
+                                    size: 34,
+                                    weight: .black,
+                                    design: .rounded
                                 )
+                            )
+
 
                             Text(
                                 "走りたい気分に合う曲を探そう。"
@@ -74,154 +84,49 @@ struct SearchView: View {
                                     set: {
                                         video in
 
+                                        guard let video
+                                        else {
+
+                                            return
+                                        }
+
+
+                                        // 個別選択なので
+                                        // シャッフル停止
+
+                                        shuffleManager
+                                            .stop()
+
+
+                                        // 自動再生しない
+
+                                        shouldAutoplay =
+                                            true
+
+
                                         selectedVideo =
                                             video
 
-                                        if let video {
-
-                                            currentVideoID =
-                                                video.id
-                                        }
+                                        currentVideoID =
+                                            video.id
                                     }
                                 ),
                             favoritesManager:
                                 favoritesManager
                         )
                     }
-                    .padding(18)
+                    .padding(
+                        18
+                    )
                     .padding(
                         .bottom,
-                        selectedVideo != nil
-                        ? 90
-                        : 20
+                        30
                     )
-                }
-
-
-                if let video =
-                    selectedVideo {
-
-                    VStack {
-
-                        Spacer()
-
-                        miniPlayer(
-                            video
-                        )
-                    }
                 }
             }
-            .toolbar(.hidden)
-        }
-    }
-
-
-    private func miniPlayer(
-        _ video:
-            YouTubeVideo
-    ) -> some View {
-
-        Button {
-
-            selectedTab =
-                .home
-
-        } label: {
-
-            HStack(
-                spacing: 12
-            ) {
-
-                AsyncImage(
-                    url:
-                        URL(
-                            string:
-                                video
-                                .thumbnailURL
-                        )
-                ) { image in
-
-                    image
-                        .resizable()
-                        .scaledToFill()
-
-                } placeholder: {
-
-                    Rectangle()
-                        .fill(
-                            MelonomeTheme
-                                .cardLight
-                        )
-                }
-                .frame(
-                    width: 58,
-                    height: 46
-                )
-                .clipShape(
-                    RoundedRectangle(
-                        cornerRadius: 8
-                    )
-                )
-
-
-                VStack(
-                    alignment: .leading,
-                    spacing: 2
-                ) {
-
-                    Text(video.title)
-                        .font(.subheadline)
-                        .fontWeight(
-                            .semibold
-                        )
-                        .lineLimit(1)
-
-                    Text(
-                        video.channelTitle
-                    )
-                    .font(.caption)
-                    .foregroundStyle(
-                        .secondary
-                    )
-                    .lineLimit(1)
-                }
-
-                Spacer()
-
-                Image(
-                    systemName:
-                        "waveform"
-                )
-                .foregroundStyle(
-                    MelonomeTheme.accent
-                )
-
-                Image(
-                    systemName:
-                        "chevron.up"
-                )
-                .foregroundStyle(
-                    .secondary
-                )
-            }
-            .padding(10)
-            .background(
-                .ultraThinMaterial
-            )
-            .clipShape(
-                RoundedRectangle(
-                    cornerRadius: 16
-                )
-            )
-            .padding(
-                .horizontal,
-                12
-            )
-            .padding(
-                .bottom,
-                4
+            .toolbar(
+                .hidden
             )
         }
-        .buttonStyle(.plain)
     }
 }

@@ -3,25 +3,53 @@ import SwiftUI
 struct HomeView: View {
 
     @ObservedObject
-    var locationManager: LocationManager
+    var locationManager:
+        LocationManager
 
     @ObservedObject
-    var favoritesManager: FavoritesManager
+    var favoritesManager:
+        FavoritesManager
+
+    @ObservedObject
+    var shuffleManager:
+        ShuffleManager
+
+    @ObservedObject
+    var lastPlayedManager:
+        LastPlayedManager
+
 
     @Binding
-    var selectedVideo: YouTubeVideo?
+    var selectedVideo:
+        YouTubeVideo?
 
     @Binding
-    var currentVideoID: String
+    var currentVideoID:
+        String
 
     @Binding
-    var playbackRate: Double
+    var playbackRate:
+        Double
 
     @Binding
-    var targetSpeed: Double
+    var manualPlaybackRate:
+        Double
 
     @Binding
-    var runningMode: RunningMode
+    var targetSpeed:
+        Double
+
+    @Binding
+    var runningMode:
+        RunningMode
+
+    @Binding
+    var shouldAutoplay:
+        Bool
+
+
+    let onNextTrack:
+        () -> Void
 
 
     private let youtubeService =
@@ -29,11 +57,16 @@ struct HomeView: View {
 
 
     @State
-    private var lastAppliedRate: Double = 0.6
+    private var lastAppliedRate:
+        Double = 0.6
 
     @State
     private var lastRateChangeTime:
         Date = .distantPast
+
+    @State
+    private var showRunView:
+        Bool = false
 
 
     var body: some View {
@@ -42,8 +75,10 @@ struct HomeView: View {
 
             ZStack {
 
-                MelonomeTheme.background
+                MelonomeTheme
+                    .background
                     .ignoresSafeArea()
+
 
                 ScrollView {
 
@@ -54,34 +89,89 @@ struct HomeView: View {
 
                         header
 
-                        playerSection
+                        currentTrackSection
 
                         runningSection
 
                         modeSection
 
+                        startRunningButton
+
                         favoritesSection
                     }
-                    .padding(.horizontal, 18)
-                    .padding(.bottom, 30)
+                    .padding(
+                        .horizontal,
+                        18
+                    )
+                    .padding(
+                        .bottom,
+                        30
+                    )
                 }
             }
-            .toolbar(.hidden)
+            .toolbar(
+                .hidden
+            )
+
+
+            // =====================================
+            // ランニング画面
+            // =====================================
+
+            .fullScreenCover(
+                isPresented:
+                    $showRunView
+            ) {
+
+                RunView(
+                    locationManager:
+                        locationManager,
+                    selectedVideo:
+                        $selectedVideo,
+                    playbackRate:
+                        $playbackRate,
+                    targetSpeed:
+                        $targetSpeed,
+                    runningMode:
+                        $runningMode,
+                    onNextTrack:
+                        onNextTrack
+                )
+            }
+
+
+            // =====================================
+            // 初期動画
+            // =====================================
+
             .task {
 
                 if selectedVideo == nil {
 
-                    await loadDefaultVideo()
+                    await loadInitialVideo()
                 }
             }
+
+
+            // =====================================
+            // GPS速度
+            // =====================================
+
             .onChange(
                 of: locationManager.speed
             ) { _, speed in
 
                 updatePlaybackRate(
-                    currentSpeed: speed
+                    currentSpeed:
+                        speed
                 )
             }
+
+
+            // =====================================
+            // 目標速度
+            // =====================================
+
             .onChange(
                 of: targetSpeed
             ) { _, _ in
@@ -89,100 +179,187 @@ struct HomeView: View {
                 updatePlaybackRate(
                     currentSpeed:
                         locationManager.speed,
-                    force: true
+                    force:
+                        true
                 )
             }
+
+
+            // =====================================
+            // モード
+            // =====================================
+
             .onChange(
                 of: runningMode
-            ) { _, _ in
+            ) { _, newMode in
 
-                updatePlaybackRate(
-                    currentSpeed:
-                        locationManager.speed,
-                    force: true
-                )
+                if newMode == .manual {
+
+                    playbackRate =
+                        manualPlaybackRate
+
+                    lastAppliedRate =
+                        manualPlaybackRate
+
+                } else {
+
+                    updatePlaybackRate(
+                        currentSpeed:
+                            locationManager.speed,
+                        force:
+                            true
+                    )
+                }
+            }
+
+
+            // =====================================
+            // マニュアル速度
+            // =====================================
+
+            .onChange(
+                of: manualPlaybackRate
+            ) { _, newValue in
+
+                guard runningMode
+                    == .manual
+                else {
+                    return
+                }
+
+                playbackRate =
+                    newValue
+
+                lastAppliedRate =
+                    newValue
             }
         }
     }
 
 
-    // MARK: - Header
+    // =====================================
+    // ヘッダー
+    // =====================================
 
-    private var header: some View {
+    private var header:
+        some View {
 
         VStack(
             alignment: .leading,
             spacing: 2
         ) {
 
-            Text("Melonome")
-                .font(
-                    .system(
-                        size: 36,
-                        weight: .black,
-                        design: .rounded
-                    )
+            Text(
+                "Melonome"
+            )
+            .font(
+                .system(
+                    size: 36,
+                    weight: .black,
+                    design: .rounded
                 )
-                .foregroundStyle(.white)
+            )
 
-            Text("Music follows your pace.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+
+            Text(
+                "Music follows your pace."
+            )
+            .font(
+                .subheadline
+            )
+            .foregroundStyle(
+                .secondary
+            )
         }
-        .padding(.top, 8)
+        .padding(
+            .top,
+            8
+        )
     }
 
 
-    // MARK: - Player
+    // =====================================
+    // 現在の曲
+    // =====================================
 
-    private var playerSection: some View {
+    @ViewBuilder
+    private var currentTrackSection:
+        some View {
 
-        VStack(
-            alignment: .leading,
-            spacing: 14
-        ) {
+        if let video =
+            selectedVideo {
 
-            YouTubePlayerView(
-                videoID: currentVideoID,
-                playbackRate: $playbackRate
-            )
-            .id(currentVideoID)
-            .aspectRatio(
-                16 / 9,
-                contentMode: .fit
-            )
-            .clipShape(
-                RoundedRectangle(
-                    cornerRadius: 22
-                )
-            )
-
-
-            if let video = selectedVideo {
+            VStack(
+                alignment: .leading,
+                spacing: 10
+            ) {
 
                 HStack(
                     spacing: 14
                 ) {
+
+                    AsyncImage(
+                        url:
+                            URL(
+                                string:
+                                    video.thumbnailURL
+                            )
+                    ) { image in
+
+                        image
+                            .resizable()
+                            .scaledToFill()
+
+                    } placeholder: {
+
+                        Rectangle()
+                            .fill(
+                                MelonomeTheme
+                                    .cardLight
+                            )
+                    }
+                    .frame(
+                        width: 92,
+                        height: 55
+                    )
+                    .clipShape(
+                        RoundedRectangle(
+                            cornerRadius: 10
+                        )
+                    )
+
 
                     VStack(
                         alignment: .leading,
                         spacing: 5
                     ) {
 
-                        Text(video.title)
-                            .font(.title3)
-                            .fontWeight(.bold)
-                            .lineLimit(2)
-                            .foregroundStyle(.white)
+                        Text(
+                            video.title
+                        )
+                        .font(
+                            .title3
+                        )
+                        .fontWeight(
+                            .bold
+                        )
+                        .lineLimit(2)
 
-                        Text(video.channelTitle)
-                            .font(.subheadline)
-                            .foregroundStyle(
-                                .secondary
-                            )
+
+                        Text(
+                            video.channelTitle
+                        )
+                        .font(
+                            .subheadline
+                        )
+                        .foregroundStyle(
+                            .secondary
+                        )
                     }
 
+
                     Spacer()
+
 
                     Button {
 
@@ -196,15 +373,22 @@ struct HomeView: View {
                         Image(
                             systemName:
                                 favoritesManager
-                                .isFavorite(video)
+                                .isFavorite(
+                                    video
+                                )
                                 ? "star.fill"
                                 : "star"
                         )
-                        .font(.title2)
+                        .font(
+                            .title2
+                        )
                         .foregroundStyle(
                             favoritesManager
-                                .isFavorite(video)
-                            ? MelonomeTheme.accent
+                                .isFavorite(
+                                    video
+                                )
+                            ? MelonomeTheme
+                                .accent
                             : .secondary
                         )
                         .frame(
@@ -212,22 +396,92 @@ struct HomeView: View {
                             height: 48
                         )
                         .background(
-                            MelonomeTheme.card
+                            MelonomeTheme
+                                .card
                         )
                         .clipShape(
                             Circle()
                         )
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(
+                        .plain
+                    )
+                }
+
+
+                // 次へ
+
+                HStack {
+
+                    if shuffleManager
+                        .isShuffleEnabled {
+
+                        HStack(
+                            spacing: 5
+                        ) {
+
+                            Image(
+                                systemName:
+                                    "shuffle"
+                            )
+
+                            Text(
+                                "シャッフル再生中"
+                            )
+                        }
+                        .font(
+                            .caption
+                        )
+                        .foregroundStyle(
+                            MelonomeTheme
+                                .accent
+                        )
+                    }
+
+
+                    Spacer()
+
+
+                    Button {
+
+                        onNextTrack()
+
+                    } label: {
+
+                        HStack {
+
+                            Text(
+                                "次へ"
+                            )
+
+                            Image(
+                                systemName:
+                                    "forward.end.fill"
+                            )
+                        }
+                        .fontWeight(
+                            .semibold
+                        )
+                    }
+                    .buttonStyle(
+                        .bordered
+                    )
+                    .tint(
+                        MelonomeTheme
+                            .accent
+                    )
                 }
             }
         }
     }
 
 
-    // MARK: - Running
+    // =====================================
+    // ランニング
+    // =====================================
 
-    private var runningSection: some View {
+    private var runningSection:
+        some View {
 
         VStack(
             spacing: 18
@@ -237,22 +491,34 @@ struct HomeView: View {
                 spacing: 2
             ) {
 
-                Text("現在の速度")
-                    .font(.caption)
-                    .fontWeight(.bold)
-                    .tracking(1.5)
-                    .foregroundStyle(
-                        MelonomeTheme.accent
-                    )
+                Text(
+                    "現在の速度"
+                )
+                .font(
+                    .caption
+                )
+                .fontWeight(
+                    .bold
+                )
+                .tracking(
+                    1.5
+                )
+                .foregroundStyle(
+                    MelonomeTheme
+                        .accent
+                )
+
 
                 HStack(
-                    alignment: .firstTextBaseline,
+                    alignment:
+                        .firstTextBaseline,
                     spacing: 6
                 ) {
 
                     Text(
                         String(
-                            format: "%.1f",
+                            format:
+                                "%.1f",
                             locationManager.speed
                         )
                     )
@@ -264,11 +530,16 @@ struct HomeView: View {
                         )
                     )
 
-                    Text("km/h")
-                        .font(.headline)
-                        .foregroundStyle(
-                            .secondary
-                        )
+
+                    Text(
+                        "km/h"
+                    )
+                    .font(
+                        .headline
+                    )
+                    .foregroundStyle(
+                        .secondary
+                    )
                 }
             }
 
@@ -278,24 +549,32 @@ struct HomeView: View {
             ) {
 
                 metricCard(
-                    title: "目標速度",
+                    title:
+                        "目標速度",
                     value:
                         String(
-                            format: "%.1f",
+                            format:
+                                "%.1f",
                             targetSpeed
                         ),
-                    unit: "km/h",
-                    icon: "scope"
+                    unit:
+                        "km/h",
+                    icon:
+                        "scope"
                 )
 
+
                 metricCard(
-                    title: "再生速度",
+                    title:
+                        "再生速度",
                     value:
                         String(
-                            format: "%.2f",
+                            format:
+                                "%.2f",
                             playbackRate
                         ),
-                    unit: "x",
+                    unit:
+                        "x",
                     icon:
                         playbackRate > 1
                         ? "bolt.fill"
@@ -304,84 +583,126 @@ struct HomeView: View {
             }
 
 
-            VStack(
-                spacing: 10
-            ) {
+            if runningMode
+                != .manual {
 
-                HStack {
+                VStack(
+                    spacing: 10
+                ) {
 
-                    Text("目標速度")
+                    HStack {
+
+                        Text(
+                            "目標速度"
+                        )
                         .fontWeight(
                             .semibold
                         )
 
-                    Spacer()
+                        Spacer()
 
-                    Text(
-                        String(
-                            format:
-                                "%.1f km/h",
-                            targetSpeed
+                        Text(
+                            String(
+                                format:
+                                    "%.1f km/h",
+                                targetSpeed
+                            )
                         )
-                    )
-                    .foregroundStyle(
-                        MelonomeTheme.accent
-                    )
-                    .fontWeight(.bold)
-                }
+                        .foregroundStyle(
+                            MelonomeTheme
+                                .accent
+                        )
+                        .fontWeight(
+                            .bold
+                        )
+                    }
 
-                Slider(
-                    value: $targetSpeed,
-                    in: 5...20,
-                    step: 0.5
+
+                    Slider(
+                        value:
+                            $targetSpeed,
+                        in:
+                            5...20,
+                        step:
+                            0.5
+                    )
+                    .tint(
+                        MelonomeTheme
+                            .accent
+                    )
+                }
+                .padding(
+                    18
                 )
-                .tint(
-                    MelonomeTheme.accent
+                .background(
+                    MelonomeTheme
+                        .card
+                )
+                .clipShape(
+                    RoundedRectangle(
+                        cornerRadius: 20
+                    )
                 )
             }
-            .padding(18)
-            .background(
-                MelonomeTheme.card
-            )
-            .clipShape(
-                RoundedRectangle(
-                    cornerRadius: 20
-                )
-            )
         }
     }
 
 
-    // MARK: - Mode
+    // =====================================
+    // 走行モード
+    // =====================================
 
-    private var modeSection: some View {
+    private var modeSection:
+        some View {
 
         VStack(
             alignment: .leading,
             spacing: 12
         ) {
 
-            Text("走行モード")
-                .font(.title3)
-                .fontWeight(.bold)
+            Text(
+                "走行モード"
+            )
+            .font(
+                .title3
+            )
+            .fontWeight(
+                .bold
+            )
 
 
             Picker(
                 "走行モード",
-                selection: $runningMode
+                selection:
+                    $runningMode
             ) {
 
-                Text("ノーマル")
-                    .tag(
-                        RunningMode.normal
-                    )
+                Text(
+                    "ノーマル"
+                )
+                .tag(
+                    RunningMode.normal
+                )
 
-                Text("ブースト")
-                    .tag(
-                        RunningMode.boost
-                    )
+
+                Text(
+                    "⚡ ブースト"
+                )
+                .tag(
+                    RunningMode.boost
+                )
+
+
+                Text(
+                    "マニュアル"
+                )
+                .tag(
+                    RunningMode.manual
+                )
             }
-            .pickerStyle(.segmented)
+            .pickerStyle(
+                .segmented
+            )
 
 
             HStack(
@@ -390,31 +711,205 @@ struct HomeView: View {
 
                 Image(
                     systemName:
-                        runningMode == .boost
-                        ? "bolt.fill"
-                        : "metronome.fill"
+                        modeIcon
                 )
                 .foregroundStyle(
-                    MelonomeTheme.accent
+                    MelonomeTheme
+                        .accent
                 )
 
+
                 Text(
-                    runningMode.description
+                    runningMode
+                        .description
                 )
-                .font(.subheadline)
+                .font(
+                    .subheadline
+                )
                 .foregroundStyle(
                     .secondary
                 )
             }
-            .padding(
-                .horizontal,
-                4
-            )
+
+
+            if runningMode
+                == .manual {
+
+                VStack(
+                    spacing: 12
+                ) {
+
+                    HStack {
+
+                        Text(
+                            "再生速度"
+                        )
+                        .fontWeight(
+                            .semibold
+                        )
+
+                        Spacer()
+
+                        Text(
+                            String(
+                                format:
+                                    "%.2fx",
+                                manualPlaybackRate
+                            )
+                        )
+                        .foregroundStyle(
+                            MelonomeTheme
+                                .accent
+                        )
+                        .fontWeight(
+                            .bold
+                        )
+                    }
+
+
+                    Slider(
+                        value:
+                            $manualPlaybackRate,
+                        in:
+                            0.6...1.4,
+                        step:
+                            0.01
+                    )
+                    .tint(
+                        MelonomeTheme
+                            .accent
+                    )
+
+
+                    HStack {
+
+                        Text("0.6x")
+
+                        Spacer()
+
+                        Text("1.0x")
+
+                        Spacer()
+
+                        Text("1.4x")
+                    }
+                    .font(
+                        .caption2
+                    )
+                    .foregroundStyle(
+                        .secondary
+                    )
+                }
+                .padding(
+                    18
+                )
+                .background(
+                    MelonomeTheme
+                        .card
+                )
+                .clipShape(
+                    RoundedRectangle(
+                        cornerRadius: 20
+                    )
+                )
+            }
         }
     }
 
 
-    // MARK: - Favorites
+    // =====================================
+    // ランニング開始
+    // =====================================
+
+    private var startRunningButton:
+        some View {
+
+        Button {
+
+            showRunView =
+                true
+
+        } label: {
+
+            HStack {
+
+                Image(
+                    systemName:
+                        "figure.run"
+                )
+                .font(
+                    .title2
+                )
+
+
+                Text(
+                    "ランニングを開始"
+                )
+                .font(
+                    .headline
+                )
+
+
+                Spacer()
+
+
+                Image(
+                    systemName:
+                        "chevron.right"
+                )
+            }
+            .foregroundStyle(
+                .black
+            )
+            .padding(
+                18
+            )
+            .background(
+                MelonomeTheme
+                    .accent
+            )
+            .clipShape(
+                RoundedRectangle(
+                    cornerRadius: 20
+                )
+            )
+        }
+        .buttonStyle(
+            .plain
+        )
+    }
+
+
+    // =====================================
+    // モードアイコン
+    // =====================================
+
+    private var modeIcon:
+        String {
+
+        switch runningMode {
+
+        case .normal:
+
+            return
+                "metronome.fill"
+
+        case .boost:
+
+            return
+                "bolt.fill"
+
+        case .manual:
+
+            return
+                "slider.horizontal.3"
+        }
+    }
+
+
+    // =====================================
+    // お気に入り
+    // =====================================
 
     @ViewBuilder
     private var favoritesSection:
@@ -429,14 +924,76 @@ struct HomeView: View {
                 spacing: 14
             ) {
 
-                Text("お気に入り")
-                    .font(.title2)
-                    .fontWeight(.bold)
+                HStack {
+
+                    Text(
+                        "お気に入り"
+                    )
+                    .font(
+                        .title2
+                    )
+                    .fontWeight(
+                        .bold
+                    )
+
+
+                    Spacer()
+
+
+                    Button {
+
+                        startShuffle()
+
+                    } label: {
+
+                        HStack(
+                            spacing: 6
+                        ) {
+
+                            Image(
+                                systemName:
+                                    "shuffle"
+                            )
+
+                            Text(
+                                "シャッフル再生"
+                            )
+                        }
+                        .font(
+                            .subheadline
+                        )
+                        .fontWeight(
+                            .bold
+                        )
+                        .foregroundStyle(
+                            .black
+                        )
+                        .padding(
+                            .horizontal,
+                            14
+                        )
+                        .padding(
+                            .vertical,
+                            9
+                        )
+                        .background(
+                            MelonomeTheme
+                                .accent
+                        )
+                        .clipShape(
+                            Capsule()
+                        )
+                    }
+                    .buttonStyle(
+                        .plain
+                    )
+                }
 
 
                 ScrollView(
                     .horizontal,
-                    showsIndicators: false
+                    showsIndicators:
+                        false
                 ) {
 
                     HStack(
@@ -450,6 +1007,14 @@ struct HomeView: View {
                         ) { video in
 
                             Button {
+
+                                shuffleManager
+                                    .stop()
+
+                                // 選んだら即再生
+
+                                shouldAutoplay =
+                                    true
 
                                 selectedVideo =
                                     video
@@ -492,10 +1057,10 @@ struct HomeView: View {
                                     )
                                     .clipShape(
                                         RoundedRectangle(
-                                            cornerRadius:
-                                                14
+                                            cornerRadius: 14
                                         )
                                     )
+
 
                                     Text(
                                         video.title
@@ -507,27 +1072,28 @@ struct HomeView: View {
                                         .semibold
                                     )
                                     .lineLimit(2)
-                                    .foregroundStyle(
-                                        .white
-                                    )
                                     .frame(
                                         width: 165,
                                         alignment:
                                             .leading
                                     )
 
+
                                     Text(
-                                        video
-                                            .channelTitle
+                                        video.channelTitle
                                     )
-                                    .font(.caption)
+                                    .font(
+                                        .caption
+                                    )
                                     .foregroundStyle(
                                         .secondary
                                     )
                                     .lineLimit(1)
                                 }
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(
+                                .plain
+                            )
                         }
                     }
                 }
@@ -536,7 +1102,9 @@ struct HomeView: View {
     }
 
 
-    // MARK: - Metric Card
+    // =====================================
+    // カード
+    // =====================================
 
     private func metricCard(
         title: String,
@@ -553,46 +1121,66 @@ struct HomeView: View {
             HStack {
 
                 Image(
-                    systemName: icon
+                    systemName:
+                        icon
                 )
                 .foregroundStyle(
-                    MelonomeTheme.accent
+                    MelonomeTheme
+                        .accent
                 )
 
-                Text(title)
-                    .font(.caption)
-                    .fontWeight(.bold)
-                    .foregroundStyle(
-                        .secondary
-                    )
+                Text(
+                    title
+                )
+                .font(
+                    .caption
+                )
+                .fontWeight(
+                    .bold
+                )
+                .foregroundStyle(
+                    .secondary
+                )
             }
 
+
             HStack(
-                alignment: .firstTextBaseline,
+                alignment:
+                    .firstTextBaseline,
                 spacing: 4
             ) {
 
-                Text(value)
-                    .font(
-                        .system(
-                            size: 30,
-                            weight: .bold,
-                            design: .rounded
-                        )
+                Text(
+                    value
+                )
+                .font(
+                    .system(
+                        size: 30,
+                        weight: .bold,
+                        design: .rounded
                     )
+                )
 
-                Text(unit)
-                    .font(.caption)
-                    .foregroundStyle(
-                        .secondary
-                    )
+                Text(
+                    unit
+                )
+                .font(
+                    .caption
+                )
+                .foregroundStyle(
+                    .secondary
+                )
             }
         }
         .frame(
-            maxWidth: .infinity,
-            alignment: .leading
+            maxWidth:
+                .infinity,
+            alignment:
+                .leading
         )
-        .padding(18)
+        .padding(
+            18
+        )
         .background(
             MelonomeTheme.card
         )
@@ -604,11 +1192,54 @@ struct HomeView: View {
     }
 
 
-    // MARK: - Default Video
+    // =====================================
+    // 初期曲
+    // =====================================
 
     @MainActor
-    private func loadDefaultVideo()
+    private func loadInitialVideo()
         async {
+
+        // ① 前回の曲
+
+        if let lastVideo =
+                lastPlayedManager
+                    .load() {
+
+            selectedVideo =
+                lastVideo
+
+            currentVideoID =
+                lastVideo.id
+
+            shouldAutoplay =
+                false
+
+            return
+        }
+
+
+        // ② お気に入りランダム
+
+        if let randomFavorite =
+                favoritesManager
+                    .favorites
+                    .randomElement() {
+
+            selectedVideo =
+                randomFavorite
+
+            currentVideoID =
+                randomFavorite.id
+
+            shouldAutoplay =
+                false
+
+            return
+        }
+
+
+        // ③ 初回
 
         do {
 
@@ -622,6 +1253,9 @@ struct HomeView: View {
             selectedVideo =
                 video
 
+            shouldAutoplay =
+                false
+
         } catch {
 
             print(
@@ -632,30 +1266,87 @@ struct HomeView: View {
     }
 
 
-    // MARK: - Playback Logic
+    // =====================================
+    // シャッフル
+    // =====================================
+
+    private func startShuffle() {
+
+        guard let video =
+                shuffleManager
+                    .startShuffle(
+                        favorites:
+                            favoritesManager
+                                .favorites
+                    )
+        else {
+            return
+        }
+
+
+        shouldAutoplay =
+            true
+
+        selectedVideo =
+            video
+
+        currentVideoID =
+            video.id
+    }
+
+
+    // =====================================
+    // 再生速度
+    // =====================================
 
     private func updatePlaybackRate(
-        currentSpeed: Double,
-        force: Bool = false
+        currentSpeed:
+            Double,
+        force:
+            Bool = false
     ) {
 
-        let minimumRate = 0.6
-        let originalMinimumRate = 0.4
-        let speedRange = 5.0
+        if runningMode
+            == .manual {
+
+            playbackRate =
+                manualPlaybackRate
+
+            lastAppliedRate =
+                manualPlaybackRate
+
+            return
+        }
+
+
+        let minimumRate =
+            0.6
+
+        let originalMinimumRate =
+            0.4
+
+        let speedRange =
+            5.0
 
         let minimumSpeed =
-            targetSpeed - speedRange
+            targetSpeed
+            - speedRange
 
-        let calculatedRate: Double
+
+        let calculatedRate:
+            Double
 
 
-        if currentSpeed >= targetSpeed {
+        if currentSpeed
+            >= targetSpeed {
 
             switch runningMode {
 
             case .normal:
 
-                calculatedRate = 1.0
+                calculatedRate =
+                    1.0
+
 
             case .boost:
 
@@ -674,13 +1365,21 @@ struct HomeView: View {
                     1.0
                     + excess
                     * increase
+
+
+            case .manual:
+
+                calculatedRate =
+                    manualPlaybackRate
             }
 
+
         } else if currentSpeed
-                    <= minimumSpeed {
+            <= minimumSpeed {
 
             calculatedRate =
                 originalMinimumRate
+
 
         } else {
 
@@ -702,9 +1401,11 @@ struct HomeView: View {
 
 
         let maximumRate =
-            runningMode == .boost
+            runningMode
+            == .boost
             ? 1.4
             : 1.0
+
 
         let limitedRate =
             min(
@@ -716,16 +1417,20 @@ struct HomeView: View {
             )
 
 
-        if runningMode == .normal,
-           currentSpeed >= targetSpeed {
+        if runningMode
+            == .normal,
+           currentSpeed
+            >= targetSpeed {
 
             if abs(
                 lastAppliedRate - 1
             ) > 0.001 {
 
-                playbackRate = 1
+                playbackRate =
+                    1
 
-                lastAppliedRate = 1
+                lastAppliedRate =
+                    1
 
                 lastRateChangeTime =
                     Date()
@@ -744,6 +1449,7 @@ struct HomeView: View {
 
                 return
             }
+
 
             if Date()
                 .timeIntervalSince(
