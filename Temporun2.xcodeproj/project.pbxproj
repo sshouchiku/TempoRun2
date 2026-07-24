@@ -11,6 +11,11 @@
 		58040A103012DE9100921D52 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58040A0F3012DE9100921D52 /* ContentView.swift */; };
 		58040A1C3012E1ED00921D52 /* YouTubePlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58040A1B3012E1ED00921D52 /* YouTubePlayerView.swift */; };
 		5893B99D3012EE27002997CE /* LocationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5893B99C3012EE27002997CE /* LocationManager.swift */; };
+		58E468193013032300E5246D /* Secrets.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 58E468183013032300E5246D /* Secrets.xcconfig */; };
+		58E4681D301306A200E5246D /* YouTubeVideo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58E4681C301306A200E5246D /* YouTubeVideo.swift */; };
+		58E4681F301306D600E5246D /* YouTubeSearchService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58E4681E301306D600E5246D /* YouTubeSearchService.swift */; };
+		58E46821301306FA00E5246D /* YouTubeSearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58E46820301306FA00E5246D /* YouTubeSearchView.swift */; };
+		58E4682330130B5300E5246D /* FavoritesManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58E4682230130B5300E5246D /* FavoritesManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -20,6 +25,11 @@
 		58040A1B3012E1ED00921D52 /* YouTubePlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YouTubePlayerView.swift; sourceTree = "<group>"; };
 		5893B99C3012EE27002997CE /* LocationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationManager.swift; sourceTree = "<group>"; };
 		5893B99E3012EE9D002997CE /* Temporun2-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "Temporun2-Info.plist"; sourceTree = "<group>"; };
+		58E468183013032300E5246D /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		58E4681C301306A200E5246D /* YouTubeVideo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YouTubeVideo.swift; sourceTree = "<group>"; };
+		58E4681E301306D600E5246D /* YouTubeSearchService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YouTubeSearchService.swift; sourceTree = "<group>"; };
+		58E46820301306FA00E5246D /* YouTubeSearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YouTubeSearchView.swift; sourceTree = "<group>"; };
+		58E4682230130B5300E5246D /* FavoritesManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoritesManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -36,6 +46,9 @@
 		58040A013012DE9100921D52 = {
 			isa = PBXGroup;
 			children = (
+				58E4681B3013065A00E5246D /* Services */,
+				58E4681A3013064800E5246D /* Models */,
+				58E468183013032300E5246D /* Secrets.xcconfig */,
 				5893B99E3012EE9D002997CE /* Temporun2-Info.plist */,
 				58040A1A3012E11200921D52 /* Managers */,
 				58040A193012E0DC00921D52 /* Views */,
@@ -57,6 +70,7 @@
 			children = (
 				58040A0F3012DE9100921D52 /* ContentView.swift */,
 				58040A1B3012E1ED00921D52 /* YouTubePlayerView.swift */,
+				58E46820301306FA00E5246D /* YouTubeSearchView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -65,8 +79,25 @@
 			isa = PBXGroup;
 			children = (
 				5893B99C3012EE27002997CE /* LocationManager.swift */,
+				58E4682230130B5300E5246D /* FavoritesManager.swift */,
 			);
 			path = Managers;
+			sourceTree = "<group>";
+		};
+		58E4681A3013064800E5246D /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				58E4681C301306A200E5246D /* YouTubeVideo.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		58E4681B3013065A00E5246D /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				58E4681E301306D600E5246D /* YouTubeSearchService.swift */,
+			);
+			path = Services;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -132,6 +163,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				58E468193013032300E5246D /* Secrets.xcconfig in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -143,9 +175,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				5893B99D3012EE27002997CE /* LocationManager.swift in Sources */,
+				58E46821301306FA00E5246D /* YouTubeSearchView.swift in Sources */,
+				58E4681F301306D600E5246D /* YouTubeSearchService.swift in Sources */,
 				58040A103012DE9100921D52 /* ContentView.swift in Sources */,
+				58E4681D301306A200E5246D /* YouTubeVideo.swift in Sources */,
 				58040A1C3012E1ED00921D52 /* YouTubePlayerView.swift in Sources */,
 				58040A0E3012DE9100921D52 /* Temporun2App.swift in Sources */,
+				58E4682330130B5300E5246D /* FavoritesManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -154,6 +190,7 @@
 /* Begin XCBuildConfiguration section */
 		58040A133012DE9300921D52 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 58E468183013032300E5246D /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -218,6 +255,7 @@
 		};
 		58040A143012DE9300921D52 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 58E468183013032300E5246D /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -275,6 +313,7 @@
 		};
 		58040A163012DE9300921D52 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 58E468183013032300E5246D /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -309,6 +348,7 @@
 		};
 		58040A173012DE9300921D52 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 58E468183013032300E5246D /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;

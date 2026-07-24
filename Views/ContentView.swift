@@ -2,40 +2,109 @@ import SwiftUI
 
 struct ContentView: View {
 
-    @StateObject
-    private var locationManager = LocationManager()
+    // =====================================
+    // ランニングモード
+    // =====================================
 
-    // 目標速度
+    enum RunningMode: String, CaseIterable, Identifiable {
+
+        case normal = "Normal"
+        case boost = "Boost"
+
+        var id: String {
+            rawValue
+        }
+
+        var description: String {
+
+            switch self {
+
+            case .normal:
+                return "目標速度に達すると1.0x"
+
+            case .boost:
+                return "目標速度を超えると1.0xより速くなる"
+            }
+        }
+    }
+
+
+    // =====================================
+    // Managers
+    // =====================================
+
+    @StateObject
+    private var locationManager =
+        LocationManager()
+
+    @StateObject
+    private var favoritesManager =
+        FavoritesManager()
+
+    private let youtubeService =
+        YouTubeSearchService()
+
+
+    // =====================================
+    // ランニング設定
+    // =====================================
+
     @State
     private var targetSpeed: Double = 10.0
 
-    // YouTube再生速度
     @State
-    private var playbackRate: Double = 0.6
+    private var runningMode:
+        RunningMode = .normal
 
-    // YouTube URL
     @State
-    private var youtubeURL: String = ""
+    private var playbackRate:
+        Double = 0.6
 
-    // 最初に表示する動画
-    @State
-    private var videoID: String = "2I25AFSBm2g"
 
-    // URLエラー
-    @State
-    private var urlError: String?
+    // =====================================
+    // YouTube
+    // =====================================
 
-    // 手動テストモード
-    @State
-    private var manualTestMode: Bool = false
+    private let defaultVideoID =
+        "2I25AFSBm2g"
 
-    // 最後にYouTubeへ設定した速度
     @State
-    private var lastAppliedRate: Double = 0.6
+    private var selectedVideo:
+        YouTubeVideo?
 
-    // 最後に速度変更した時刻
     @State
-    private var lastRateChangeTime: Date = .distantPast
+    private var currentVideoID:
+        String = "2I25AFSBm2g"
+
+
+    // =====================================
+    // URL入力
+    // =====================================
+
+    @State
+    private var youtubeURL:
+        String = ""
+
+    @State
+    private var urlError:
+        String?
+
+    @State
+    private var isLoadingVideo:
+        Bool = false
+
+
+    // =====================================
+    // 再生速度変更制御
+    // =====================================
+
+    @State
+    private var lastAppliedRate:
+        Double = 0.6
+
+    @State
+    private var lastRateChangeTime:
+        Date = .distantPast
 
 
     var body: some View {
@@ -44,47 +113,229 @@ struct ContentView: View {
 
             VStack(spacing: 20) {
 
+                // =====================================
+                // タイトル
+                // =====================================
+
                 Text("TempoRun 2")
                     .font(.largeTitle)
                     .fontWeight(.bold)
 
-                // -------------------------
-                // YouTube URL入力
-                // -------------------------
 
-                VStack(spacing: 10) {
+                // =====================================
+                // YouTube検索
+                // =====================================
 
-                    TextField(
-                        "YouTube URLを貼り付け",
-                        text: $youtubeURL
-                    )
-                    .textFieldStyle(.roundedBorder)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
+                YouTubeSearchView(
+                    selectedVideo:
+                        $selectedVideo,
+                    favoritesManager:
+                        favoritesManager
+                )
 
-                    Button("動画を読み込む") {
 
-                        loadYouTubeVideo()
-                    }
-                    .buttonStyle(.borderedProminent)
+                // =====================================
+                // お気に入り
+                // =====================================
 
-                    if let urlError {
+                if !favoritesManager
+                    .favorites
+                    .isEmpty {
 
-                        Text(urlError)
-                            .font(.caption)
-                            .foregroundStyle(.red)
+                    Divider()
+
+                    VStack(
+                        alignment: .leading,
+                        spacing: 12
+                    ) {
+
+                        HStack {
+
+                            Image(
+                                systemName:
+                                    "star.fill"
+                            )
+                            .foregroundStyle(
+                                .yellow
+                            )
+
+                            Text("お気に入り")
+                                .font(.title2)
+                                .fontWeight(.bold)
+                        }
+
+                        ScrollView(
+                            .horizontal,
+                            showsIndicators: false
+                        ) {
+
+                            HStack(
+                                spacing: 12
+                            ) {
+
+                                ForEach(
+                                    favoritesManager
+                                        .favorites
+                                ) { video in
+
+                                    favoriteCard(
+                                        video
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
 
-                // -------------------------
-                // YouTube
-                // -------------------------
+
+                Divider()
+
+
+                // =====================================
+                // 現在の動画情報
+                // =====================================
+
+                if let selectedVideo {
+
+                    HStack(
+                        spacing: 12
+                    ) {
+
+                        AsyncImage(
+                            url: URL(
+                                string:
+                                    selectedVideo
+                                        .thumbnailURL
+                            )
+                        ) { image in
+
+                            image
+                                .resizable()
+                                .scaledToFill()
+
+                        } placeholder: {
+
+                            Rectangle()
+                                .fill(
+                                    Color.gray
+                                        .opacity(
+                                            0.2
+                                        )
+                                )
+                        }
+                        .frame(
+                            width: 110,
+                            height: 62
+                        )
+                        .clipShape(
+                            RoundedRectangle(
+                                cornerRadius: 8
+                            )
+                        )
+
+
+                        VStack(
+                            alignment: .leading,
+                            spacing: 4
+                        ) {
+
+                            Text("現在の動画")
+                                .font(.caption)
+                                .foregroundStyle(
+                                    .secondary
+                                )
+
+                            Text(
+                                selectedVideo.title
+                            )
+                            .font(.headline)
+                            .lineLimit(2)
+
+                            Text(
+                                selectedVideo.channelTitle
+                            )
+                            .font(.caption)
+                            .foregroundStyle(
+                                .secondary
+                            )
+                        }
+
+                        Spacer()
+
+
+                        // 現在の動画をお気に入り
+
+                        Button {
+
+                            favoritesManager
+                                .toggleFavorite(
+                                    selectedVideo
+                                )
+
+                        } label: {
+
+                            Image(
+                                systemName:
+                                    favoritesManager
+                                    .isFavorite(
+                                        selectedVideo
+                                    )
+                                    ? "star.fill"
+                                    : "star"
+                            )
+                            .font(.title)
+                            .foregroundStyle(
+                                favoritesManager
+                                .isFavorite(
+                                    selectedVideo
+                                )
+                                ? .yellow
+                                : .secondary
+                            )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .padding()
+                    .background {
+
+                        RoundedRectangle(
+                            cornerRadius: 12
+                        )
+                        .fill(
+                            Color.blue
+                                .opacity(
+                                    0.07
+                                )
+                        )
+                    }
+
+                } else if isLoadingVideo {
+
+                    HStack {
+
+                        ProgressView()
+
+                        Text(
+                            "動画情報を取得中..."
+                        )
+                        .font(.caption)
+                    }
+                }
+
+
+                // =====================================
+                // YouTube Player
+                // =====================================
 
                 YouTubePlayerView(
-                    videoID: videoID,
-                    playbackRate: $playbackRate
+                    videoID:
+                        currentVideoID,
+                    playbackRate:
+                        $playbackRate
                 )
-                .id(videoID)
+                .id(
+                    currentVideoID
+                )
                 .aspectRatio(
                     16 / 9,
                     contentMode: .fit
@@ -95,18 +346,77 @@ struct ContentView: View {
                     )
                 )
 
-                // -------------------------
+
+                // =====================================
+                // URLから読み込み
+                // =====================================
+
+                DisclosureGroup(
+                    "URLから動画を読み込む"
+                ) {
+
+                    VStack(
+                        spacing: 10
+                    ) {
+
+                        TextField(
+                            "YouTube URLを貼り付け",
+                            text:
+                                $youtubeURL
+                        )
+                        .textFieldStyle(
+                            .roundedBorder
+                        )
+                        .textInputAutocapitalization(
+                            .never
+                        )
+                        .autocorrectionDisabled()
+
+                        Button(
+                            "動画を読み込む"
+                        ) {
+
+                            loadYouTubeVideo()
+                        }
+                        .buttonStyle(
+                            .bordered
+                        )
+
+                        if let urlError {
+
+                            Text(
+                                urlError
+                            )
+                            .font(.caption)
+                            .foregroundStyle(
+                                .red
+                            )
+                        }
+                    }
+                    .padding(.top, 10)
+                }
+
+
+                Divider()
+
+
+                // =====================================
                 // 現在速度
-                // -------------------------
+                // =====================================
 
-                VStack(spacing: 5) {
+                VStack(
+                    spacing: 5
+                ) {
 
-                    Text("Current Speed")
-                        .font(.headline)
+                    Text(
+                        "Current Speed"
+                    )
+                    .font(.headline)
 
                     Text(
                         String(
-                            format: "%.1f km/h",
+                            format:
+                                "%.1f km/h",
                             locationManager.speed
                         )
                     )
@@ -118,194 +428,402 @@ struct ContentView: View {
                     )
                 }
 
+
                 Divider()
 
-                // -------------------------
+
+                // =====================================
                 // 目標速度
-                // -------------------------
+                // =====================================
 
-                VStack(spacing: 10) {
+                VStack(
+                    spacing: 10
+                ) {
 
-                    Text("Target Speed")
-                        .font(.headline)
+                    Text(
+                        "Target Speed"
+                    )
+                    .font(.headline)
 
                     Text(
                         String(
-                            format: "%.1f km/h",
+                            format:
+                                "%.1f km/h",
                             targetSpeed
                         )
                     )
                     .font(.title2)
 
                     Slider(
-                        value: $targetSpeed,
-                        in: 5...20,
-                        step: 0.5
+                        value:
+                            $targetSpeed,
+                        in:
+                            5...20,
+                        step:
+                            0.5
                     )
                 }
 
+
                 Divider()
 
-                // -------------------------
-                // 再生速度
-                // -------------------------
 
-                VStack(spacing: 5) {
+                // =====================================
+                // ランニングモード
+                // =====================================
 
-                    Text("Playback Speed")
+                VStack(
+                    spacing: 12
+                ) {
+
+                    Text("Running Mode")
                         .font(.headline)
+
+                    Picker(
+                        "Running Mode",
+                        selection:
+                            $runningMode
+                    ) {
+
+                        ForEach(
+                            RunningMode.allCases
+                        ) { mode in
+
+                            Text(
+                                mode.rawValue
+                            )
+                            .tag(mode)
+                        }
+                    }
+                    .pickerStyle(
+                        .segmented
+                    )
+
+                    Text(
+                        runningMode.description
+                    )
+                    .font(.caption)
+                    .foregroundStyle(
+                        .secondary
+                    )
+
+                    if runningMode == .boost {
+
+                        Text(
+                            "目標を超えるほど音楽も加速"
+                        )
+                        .font(.caption)
+                        .fontWeight(
+                            .semibold
+                        )
+                    }
+                }
+
+
+                Divider()
+
+
+                // =====================================
+                // Playback Speed
+                // =====================================
+
+                VStack(
+                    spacing: 5
+                ) {
+
+                    Text(
+                        "Playback Speed"
+                    )
+                    .font(.headline)
 
                     Text(
                         String(
-                            format: "%.2fx",
+                            format:
+                                "%.2fx",
                             playbackRate
                         )
                     )
                     .font(.title)
                     .fontWeight(.bold)
-                }
 
-                // -------------------------
-                // 手動テスト
-                // -------------------------
 
-                VStack(spacing: 12) {
+                    // Boost中に1倍を超えたら表示
 
-                    Toggle(
-                        "Manual Test Mode",
-                        isOn: $manualTestMode
-                    )
-
-                    if manualTestMode {
-
-                        Text("音切れ確認用")
-                            .font(.headline)
+                    if playbackRate > 1.0 {
 
                         HStack {
 
-                            Button("0.60x") {
+                            Image(
+                                systemName:
+                                    "bolt.fill"
+                            )
 
-                                applyManualRate(0.60)
-                            }
-
-                            Button("0.70x") {
-
-                                applyManualRate(0.70)
-                            }
-
-                            Button("0.80x") {
-
-                                applyManualRate(0.80)
-                            }
-
-                            Button("1.00x") {
-
-                                applyManualRate(1.00)
-                            }
+                            Text("BOOST")
+                                .fontWeight(
+                                    .bold
+                                )
                         }
-                        .buttonStyle(.bordered)
+                        .font(.caption)
                     }
                 }
-
-                Text(
-                    manualTestMode
-                    ? "Manual Test Mode中はGPS連動を停止しています"
-                    : "速度変更の頻度を抑えて再生しています"
-                )
-                .font(.caption)
-                .foregroundStyle(.secondary)
             }
             .padding()
         }
 
-        // -------------------------
-        // GPS速度変更
-        // -------------------------
+
+        // =====================================
+        // 検索・お気に入りで動画選択
+        // =====================================
 
         .onChange(
-            of: locationManager.speed
+            of: selectedVideo
+        ) { _, newVideo in
+
+            guard let newVideo else {
+                return
+            }
+
+            currentVideoID =
+                newVideo.id
+        }
+
+
+        // =====================================
+        // GPS速度変更
+        // =====================================
+
+        .onChange(
+            of:
+                locationManager.speed
         ) { _, newSpeed in
 
-            if !manualTestMode {
-
-                updatePlaybackRate(
-                    currentSpeed: newSpeed
-                )
-            }
+            updatePlaybackRate(
+                currentSpeed:
+                    newSpeed
+            )
         }
 
-        // -------------------------
+
+        // =====================================
         // 目標速度変更
-        // -------------------------
+        // =====================================
 
         .onChange(
-            of: targetSpeed
+            of:
+                targetSpeed
         ) { _, _ in
 
-            if !manualTestMode {
-
-                updatePlaybackRate(
-                    currentSpeed:
-                        locationManager.speed
-                )
-            }
+            updatePlaybackRate(
+                currentSpeed:
+                    locationManager.speed,
+                force:
+                    true
+            )
         }
 
-        // -------------------------
-        // Manual Mode解除時
-        // GPS連動に戻す
-        // -------------------------
+
+        // =====================================
+        // モード変更
+        // =====================================
 
         .onChange(
-            of: manualTestMode
-        ) { _, isManual in
+            of:
+                runningMode
+        ) { _, _ in
 
-            if !isManual {
-
-                updatePlaybackRate(
-                    currentSpeed:
-                        locationManager.speed,
-                    force: true
-                )
-            }
+            updatePlaybackRate(
+                currentSpeed:
+                    locationManager.speed,
+                force:
+                    true
+            )
         }
+
+
+        // =====================================
+        // 起動時
+        // =====================================
+
+        .task {
+
+            await loadVideoInformation(
+                videoID:
+                    defaultVideoID
+            )
+        }
+
 
         .onAppear {
 
             updatePlaybackRate(
                 currentSpeed:
                     locationManager.speed,
-                force: true
+                force:
+                    true
             )
         }
     }
 
 
     // =====================================
-    // 手動速度変更
+    // お気に入りカード
     // =====================================
 
-    private func applyManualRate(
-        _ rate: Double
-    ) {
+    @ViewBuilder
+    private func favoriteCard(
+        _ video: YouTubeVideo
+    ) -> some View {
 
-        playbackRate = rate
+        VStack(
+            alignment: .leading,
+            spacing: 6
+        ) {
 
-        lastAppliedRate = rate
+            Button {
 
-        lastRateChangeTime = Date()
+                selectedVideo =
+                    video
+
+            } label: {
+
+                AsyncImage(
+                    url: URL(
+                        string:
+                            video.thumbnailURL
+                    )
+                ) { image in
+
+                    image
+                        .resizable()
+                        .scaledToFill()
+
+                } placeholder: {
+
+                    Rectangle()
+                        .fill(
+                            Color.gray
+                                .opacity(
+                                    0.2
+                                )
+                        )
+                }
+                .frame(
+                    width: 150,
+                    height: 84
+                )
+                .clipShape(
+                    RoundedRectangle(
+                        cornerRadius: 10
+                    )
+                )
+            }
+            .buttonStyle(.plain)
+
+            Text(
+                video.title
+            )
+            .font(.caption)
+            .fontWeight(
+                .semibold
+            )
+            .lineLimit(2)
+            .frame(
+                width: 150,
+                alignment: .leading
+            )
+
+            HStack {
+
+                Text(
+                    video.channelTitle
+                )
+                .font(.caption2)
+                .foregroundStyle(
+                    .secondary
+                )
+                .lineLimit(1)
+
+                Spacer()
+
+                Button {
+
+                    favoritesManager
+                        .toggleFavorite(
+                            video
+                        )
+
+                } label: {
+
+                    Image(
+                        systemName:
+                            "star.fill"
+                    )
+                    .foregroundStyle(
+                        .yellow
+                    )
+                }
+                .buttonStyle(.plain)
+            }
+            .frame(
+                width: 150
+            )
+        }
     }
 
 
     // =====================================
-    // YouTube URL → Video ID
+    // Video IDから動画情報取得
+    // =====================================
+
+    @MainActor
+    private func loadVideoInformation(
+        videoID: String
+    ) async {
+
+        isLoadingVideo =
+            true
+
+        do {
+
+            let video =
+                try await youtubeService
+                    .fetchVideo(
+                        videoID:
+                            videoID
+                    )
+
+            selectedVideo =
+                video
+
+            currentVideoID =
+                video.id
+
+        } catch {
+
+            print(
+                "動画情報取得失敗:",
+                error
+            )
+
+            currentVideoID =
+                videoID
+        }
+
+        isLoadingVideo =
+            false
+    }
+
+
+    // =====================================
+    // URL読み込み
     // =====================================
 
     private func loadYouTubeVideo() {
 
         guard let newVideoID =
                 extractYouTubeVideoID(
-                    from: youtubeURL
+                    from:
+                        youtubeURL
                 )
         else {
 
@@ -315,110 +833,149 @@ struct ContentView: View {
             return
         }
 
-        urlError = nil
+        urlError =
+            nil
 
-        videoID = newVideoID
+        currentVideoID =
+            newVideoID
+
+        Task {
+
+            await loadVideoInformation(
+                videoID:
+                    newVideoID
+            )
+        }
     }
 
 
     private func extractYouTubeVideoID(
-        from urlString: String
+        from urlString:
+            String
     ) -> String? {
 
         let trimmed =
-            urlString.trimmingCharacters(
-                in: .whitespacesAndNewlines
-            )
+            urlString
+                .trimmingCharacters(
+                    in:
+                        .whitespacesAndNewlines
+                )
 
-        guard let url =
-                URL(string: trimmed),
-              let host =
-                url.host?.lowercased()
+        guard
+            let url =
+                URL(
+                    string:
+                        trimmed
+                ),
+            let host =
+                url.host?
+                    .lowercased()
         else {
 
             return nil
         }
 
-        // ---------------------------------
-        // youtu.be/VIDEO_ID
-        // ---------------------------------
+        // youtu.be
 
-        if host == "youtu.be"
-            || host == "www.youtu.be" {
+        if host ==
+            "youtu.be"
+            || host ==
+            "www.youtu.be" {
 
-            return url.pathComponents
+            return url
+                .pathComponents
                 .filter {
                     $0 != "/"
                 }
                 .first
         }
 
-        // ---------------------------------
+
         // youtube.com系
-        // ---------------------------------
 
-        if host == "youtube.com"
-            || host == "www.youtube.com"
-            || host == "m.youtube.com"
-            || host == "music.youtube.com" {
+        if host ==
+            "youtube.com"
+            || host ==
+            "www.youtube.com"
+            || host ==
+            "m.youtube.com"
+            || host ==
+            "music.youtube.com" {
 
-            // watch?v=VIDEO_ID
+            // watch?v=
 
-            if url.path == "/watch" {
+            if url.path ==
+                "/watch" {
 
                 let components =
                     URLComponents(
                         url: url,
-                        resolvingAgainstBaseURL: false
+                        resolvingAgainstBaseURL:
+                            false
                     )
 
                 return components?
                     .queryItems?
                     .first(
                         where: {
-                            $0.name == "v"
+                            $0.name ==
+                                "v"
                         }
                     )?
                     .value
             }
 
-            // shorts/VIDEO_ID
+
+            // shorts
 
             if url.path
-                .hasPrefix("/shorts/") {
+                .hasPrefix(
+                    "/shorts/"
+                ) {
 
                 let parts =
                     url.pathComponents
 
                 if let index =
                     parts.firstIndex(
-                        of: "shorts"
+                        of:
+                            "shorts"
                     ),
-                   parts.indices.contains(
-                    index + 1
-                   ) {
+                   parts.indices
+                    .contains(
+                        index + 1
+                    ) {
 
-                    return parts[index + 1]
+                    return parts[
+                        index + 1
+                    ]
                 }
             }
 
-            // embed/VIDEO_ID
+
+            // embed
 
             if url.path
-                .hasPrefix("/embed/") {
+                .hasPrefix(
+                    "/embed/"
+                ) {
 
                 let parts =
                     url.pathComponents
 
                 if let index =
                     parts.firstIndex(
-                        of: "embed"
+                        of:
+                            "embed"
                     ),
-                   parts.indices.contains(
-                    index + 1
-                   ) {
+                   parts.indices
+                    .contains(
+                        index + 1
+                    ) {
 
-                    return parts[index + 1]
+                    return parts[
+                        index + 1
+                    ]
                 }
             }
         }
@@ -428,7 +985,7 @@ struct ContentView: View {
 
 
     // =====================================
-    // GPS速度 → YouTube再生速度
+    // GPS速度 → Playback速度
     // =====================================
 
     private func updatePlaybackRate(
@@ -436,47 +993,97 @@ struct ContentView: View {
         force: Bool = false
     ) {
 
-        // 実際に使う最低再生速度
-        let minimumRate = 0.6
+        // 実際の最低速度
+        let minimumRate =
+            0.6
 
-        // 元の変化の仕方は維持したいので、
-        // 計算上は0.4〜1.0のままにする
-        let originalMinimumRate = 0.4
+        // 元々の計算基準
+        //
+        // 0.4 → 1.0の傾きは
+        // そのまま維持する
+        let originalMinimumRate =
+            0.4
 
-        // 目標速度の5km/h手前を
-        // 元々の0.4x地点とする
-        let speedRange = 5.0
+        let speedRange =
+            5.0
 
         let minimumSpeed =
-            targetSpeed - speedRange
+            targetSpeed
+            - speedRange
 
-        let calculatedRate: Double
+        let calculatedRate:
+            Double
 
 
-        // -------------------------
+        // =====================================
         // 目標速度以上
-        // 必ず1.0x
-        // -------------------------
+        // =====================================
 
-        if currentSpeed >= targetSpeed {
+        if currentSpeed
+            >= targetSpeed {
 
-            calculatedRate = 1.0
+            switch runningMode {
+
+            // -------------------------
+            // Normal
+            //
+            // 目標以上は1.0固定
+            // -------------------------
+
+            case .normal:
+
+                calculatedRate =
+                    1.0
+
+
+            // -------------------------
+            // Boost
+            //
+            // 目標以上も同じ傾きで
+            // 再生速度を上げる
+            // -------------------------
+
+            case .boost:
+
+                let excessSpeed =
+                    currentSpeed
+                    - targetSpeed
+
+                // 元の傾き
+                //
+                // (1.0 - 0.4) / 5
+                // = 0.12 / km/h
+
+                let rateIncreasePerKm =
+                    (
+                        1.0
+                        - originalMinimumRate
+                    )
+                    / speedRange
+
+                calculatedRate =
+                    1.0
+                    + excessSpeed
+                    * rateIncreasePerKm
+            }
         }
 
-        // -------------------------
-        // 目標速度 - 5km/h以下
-        // -------------------------
 
-        else if currentSpeed <= minimumSpeed {
+        // =====================================
+        // 目標 - 5km/h以下
+        // =====================================
+
+        else if currentSpeed
+            <= minimumSpeed {
 
             calculatedRate =
                 originalMinimumRate
         }
 
-        // -------------------------
-        // その間
-        // 元の0.4〜1.0の勾配を維持
-        // -------------------------
+
+        // =====================================
+        // 目標未満
+        // =====================================
 
         else {
 
@@ -497,9 +1104,17 @@ struct ContentView: View {
         }
 
 
-        // -------------------------
-        // 最低0.6xに制限
-        // -------------------------
+        // =====================================
+        // 最小・最大値
+        // =====================================
+
+        let maximumRate:
+
+            Double =
+                runningMode
+                == .boost
+                ? 1.4
+                : 1.0
 
         let limitedRate =
             min(
@@ -507,43 +1122,76 @@ struct ContentView: View {
                     calculatedRate,
                     minimumRate
                 ),
-                1.0
+                maximumRate
             )
 
 
-        // -------------------------
-        // 目標速度以上なら
-        // 必ず1.0xへ戻す
+        // =====================================
+        // Normalで目標到達
         //
-        // 0.96 → 1.00 の差が
-        // 0.05未満でも無視しない
-        // -------------------------
+        // 0.96などで止まらず
+        // 必ず1.0にする
+        // =====================================
 
-        if currentSpeed >= targetSpeed {
+        if runningMode
+            == .normal
+            && currentSpeed
+            >= targetSpeed {
 
             if abs(
-                lastAppliedRate - 1.0
+                lastAppliedRate
+                - 1.0
             ) > 0.001 {
 
-                playbackRate = 1.0
+                playbackRate =
+                    1.0
 
-                lastAppliedRate = 1.0
+                lastAppliedRate =
+                    1.0
 
-                lastRateChangeTime = Date()
+                lastRateChangeTime =
+                    Date()
             }
 
             return
         }
 
 
-        // -------------------------
-        // 通常時の変更頻度制限
-        // -------------------------
+        // =====================================
+        // Boostでも
+        // 目標速度に到達した瞬間は
+        // 1.0を確実に通るようにする
+        // =====================================
+
+        if runningMode
+            == .boost
+            && currentSpeed
+            >= targetSpeed
+            && lastAppliedRate
+                < 1.0
+            && limitedRate
+                < 1.05 {
+
+            playbackRate =
+                1.0
+
+            lastAppliedRate =
+                1.0
+
+            lastRateChangeTime =
+                Date()
+
+            return
+        }
+
+
+        // =====================================
+        // 変更頻度制限
+        //
+        // YouTubeの音切れ対策
+        // =====================================
 
         if !force {
-
-            // 前回との差が0.05未満なら
-            // YouTube側の速度を変更しない
 
             let minimumRateDifference =
                 0.05
@@ -557,14 +1205,12 @@ struct ContentView: View {
             }
 
 
-            // 前回変更から1秒未満なら
-            // 変更しない
-
             let minimumInterval =
                 1.0
 
             let elapsedTime =
-                Date().timeIntervalSince(
+                Date()
+                .timeIntervalSince(
                     lastRateChangeTime
                 )
 
@@ -576,9 +1222,9 @@ struct ContentView: View {
         }
 
 
-        // -------------------------
-        // YouTubeへ反映
-        // -------------------------
+        // =====================================
+        // 反映
+        // =====================================
 
         playbackRate =
             limitedRate
